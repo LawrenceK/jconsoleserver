@@ -1,5 +1,7 @@
 package org.klyne.consoleserver;
 
+import org.apache.mina.core.buffer.IoBuffer;
+
 public interface Message {
-	void send(String str);
+	void send(IoBuffer io);
 }

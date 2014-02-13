@@ -10,5 +10,6 @@
 	<classpathentry kind="lib" path="/home/lawrence/downloads/java/slf4j-simple-1.7.6.jar"/>
 	<classpathentry kind="lib" path="/home/lawrence/downloads/java/mina-transport-serial-2.0.7.jar" sourcepath="/home/lawrence/sources/apache-mina-2.0.7/src/mina-transport-serial/src/main/java"/>
 	<classpathentry kind="lib" path="/usr/share/java/RXTXcomm.jar" sourcepath="/home/lawrence/workspace/rxtx-2.2pre2"/>
+	<classpathentry kind="lib" path="/home/lawrence/downloads/java/bouncycastle/bcprov-ext-jdk15on-150.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

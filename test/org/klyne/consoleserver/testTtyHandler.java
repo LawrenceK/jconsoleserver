@@ -20,15 +20,14 @@ public class testTtyHandler {
     Logger logger = LoggerFactory.getLogger(testTtyHandler.class);
 	
 	class messageHandler implements Message {
-		private StringBuffer messages = new StringBuffer(); 
+		private IoBuffer messages = IoBuffer.allocate(1000);
 		@Override
-		public void send(String str) {
-		    logger.info(str);
-			messages.append(str);
+		public void send(IoBuffer io) {
+			messages.put(io);
 		}
-		@Override
-		public String toString() {
-			return messages.toString();
+		public IoBuffer value() {
+			messages.flip();	// reset so readable.
+			return messages;
 		}
 		
 	}
@@ -45,52 +44,46 @@ public class testTtyHandler {
 	@Before
 	public void setUp() throws Exception {
 		this.messages = new messageHandler();
-		this.handler = new ttyHandler("/dev/ttyUSB1", this.messages);
+		this.handler = new ttyHandler( new portConfig("/dev/ttyUSB1", 8000), this.messages);
 	}
 
 	@After
 	public void tearDown() throws Exception {
+		this.doClose();
+		this.messages = null;
+	}
+	private void doClose()
+	{
 		if ( this.handler != null )
 		{
 			this.handler.close();
+			while ( ! this.handler.isClosed() )
+			{
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			this.handler = null;
 		}
-		this.messages = null;
-	}
-
-	@Test
-	public void testGetBaud() {
-		assertEquals(9600, this.handler.getBaud());
-	}
-
-	@Test
-	public void testSetBaud() {
-		assertEquals(9600, this.handler.getBaud());
-		this.handler.setBaud(19200);
-		assertEquals(19200, this.handler.getBaud());
 	}
 
 	@Test
 	public void testOpenClose() {
-		try {
-			this.handler.open();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		this.handler.close();
-		this.handler = null;
+		this.handler.open();
+		this.doClose();
 	}
 
 	@Test
 	public void testLoopback() {
 		try {
 			this.handler.open();
-			this.handler.write( "Hello123" );
+			IoBuffer msg = IoBuffer.wrap( "Hello123".getBytes());
+			this.handler.write( msg );
 			Thread.sleep(2000);
-			this.handler.close();
-			this.handler = null;
-			assertEquals("Hello123", messages.toString() );
+			assertEquals( msg, messages.value() );
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

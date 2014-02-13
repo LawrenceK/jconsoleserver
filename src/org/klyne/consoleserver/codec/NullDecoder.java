@@ -16,11 +16,7 @@ import org.apache.mina.filter.codec.ProtocolDecoderOutput;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class StringDecoder implements ProtocolDecoder {
-    private final AttributeKey DECODER = new AttributeKey(getClass(), "decoder");
-
-    private final Charset charset;
-
+public class NullDecoder implements ProtocolDecoder {
     /** The default maximum Line length. Default to 1024. */
     private int maxLineLength = 1024;
 
@@ -31,20 +27,7 @@ public class StringDecoder implements ProtocolDecoder {
      * Creates a new instance with the current default {@link Charset}
      * and {@link LineDelimiter#AUTO} delimiter.
      */
-    public StringDecoder() {
-        this(Charset.defaultCharset());
-    }
-
-    /**
-     * Creates a new instance with the specified <tt>charset</tt>
-     * and the specified <tt>delimiter</tt>.
-     */
-    public StringDecoder(Charset charset) {
-        if (charset == null) {
-            throw new IllegalArgumentException("charset parameter shuld not be null");
-        }
-
-        this.charset = charset;
+    public NullDecoder() {
     }
 
     /**
@@ -99,18 +82,7 @@ public class StringDecoder implements ProtocolDecoder {
      */
     @Override
 	public void decode(IoSession session, IoBuffer in, ProtocolDecoderOutput out) throws Exception {
-        CharsetDecoder decoder = (CharsetDecoder) session.getAttribute(DECODER);
-
-        if (decoder == null) {
-        	decoder = charset.newDecoder();
-            session.setAttribute(DECODER, decoder);
-        }
-
-        byte[] data = new byte[in.limit()];
-        in.get(data);
-        CharBuffer buffer = decoder.decode(ByteBuffer.wrap(data));
-        String str = new String(buffer.array());
-        writeText(session, str, out);
+        out.write( in );
     }
 
     /**
@@ -126,18 +98,5 @@ public class StringDecoder implements ProtocolDecoder {
      */
     @Override
 	public void dispose(IoSession session) throws Exception {
-    }
-
-    /**
-     * By default, this method propagates the decoded line of text to
-     * {@code ProtocolDecoderOutput#write(Object)}.  You may override this method to modify
-     * the default behavior.
-     *
-     * @param session  the {@code IoSession} the received data.
-     * @param text  the decoded text
-     * @param out  the upstream {@code ProtocolDecoderOutput}.
-     */
-    protected void writeText(IoSession session, String text, ProtocolDecoderOutput out) {
-        out.write(text);
     }
 }
