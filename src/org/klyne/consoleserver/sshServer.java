@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class sshServer implements Factory<Command> {
-    Logger logger = LoggerFactory.getLogger(ttyHandler.class);
+    Logger logger = LoggerFactory.getLogger(sshServer.class);
 	// This manages an ssh server on a TCP port.
 	// this may be connected directly to a serial port
 	// or may be the master server that has a command interface on it.
@@ -34,11 +34,13 @@ public class sshServer implements Factory<Command> {
 	
 	private class sessionHandler implements Command, ChannelDataReceiver, ChannelSessionAware, Message
 	{
+	    Logger logger = LoggerFactory.getLogger(sessionHandler.class);
 		OutputStream out;
 		private ttyHandler tty = null;
 		
 		@Override
 		public void destroy() {
+			logger.info("destroy");
 			tty.messageHandler = null;
 		}
 
@@ -46,26 +48,30 @@ public class sshServer implements Factory<Command> {
 		public void setErrorStream(OutputStream arg0) {
 			// a serial terminal only has a single stream of output so ignore the ssh
 			// error channel
+			logger.info("setErrorStream");
 		}
 
 		@Override
 		public void setExitCallback(ExitCallback arg0) {
 			// TODO Auto-generated method stub
+			logger.info("setExitCallback");
 		}
 		@Override
 		public void setInputStream(InputStream arg0) {
 			// Should not be called as we are ChannelSessionAware and register self as callback.
+			logger.info("setInputStream");
 			throw new IllegalArgumentException("Should not be called as we set a callback");
 		}
 
 		@Override
 		public void setOutputStream(OutputStream arg0) {
+			logger.info("setOutputStream");
 			this.out = arg0;
 		}
 
 		@Override
 		public void start(Environment arg0) throws IOException {
-			// TODO Auto-generated method stub
+			logger.info("start");
 			this.tty = new ttyHandler(config, this);
 			this.tty.open();
 		}
@@ -81,6 +87,7 @@ public class sshServer implements Factory<Command> {
 
 		@Override
 		public void close() throws IOException {
+			logger.info("close");
 			this.tty.close();
 			this.tty = null;
 		}
@@ -88,8 +95,8 @@ public class sshServer implements Factory<Command> {
 		@Override
 		public void setChannelSession(ChannelSession session) {
 			// register for callback on data received.
+			logger.info("setChannelSession");
 			session.setDataReceiver(this);
-			
 		}
 
 		@Override
@@ -106,19 +113,9 @@ public class sshServer implements Factory<Command> {
 		}
 	}
 	
-	private class commandHandler extends sessionHandler
-	{
-		@Override
-		public int data(ChannelSession channel, byte[] buf, int start, int len)
-				throws IOException {
-			// TODO add command buffering processing here.
-			return super.data(channel, buf, start, len);
-		}
-	}
-
 	@Override
 	public Command create() {
-		// TODO Auto-generated method stub
+		logger.info("create");
 		return new sessionHandler();
 	}
 

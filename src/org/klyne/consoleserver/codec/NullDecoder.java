@@ -82,7 +82,9 @@ public class NullDecoder implements ProtocolDecoder {
      */
     @Override
 	public void decode(IoSession session, IoBuffer in, ProtocolDecoderOutput out) throws Exception {
-        out.write( in );
+        byte[] data = new byte[in.limit()];
+        in.get(data);
+        out.write( ByteBuffer.wrap(data) );
     }
 
     /**
