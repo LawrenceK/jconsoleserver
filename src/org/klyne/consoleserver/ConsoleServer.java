@@ -66,6 +66,9 @@ public class ConsoleServer implements Factory<Command> {
 
 	public void create_sshd() throws IOException
 	{
+		/**
+		 * This creates the master SSH listener, the command interface.
+		 */
 		this.sshd = SshServer.setUpDefaultServer();
 		this.sshd.setPort(this.sshport);
 		this.sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider("hostkey.ser"));
@@ -83,6 +86,10 @@ public class ConsoleServer implements Factory<Command> {
 	}
 
 	public void start() throws IOException
+	/**
+	 * Look for all USB connected terminal ports and create an SSH listener for the port.
+	 * Start the master SSH listener. 
+	 */
 	{
 		portConfig config;
 		for ( int index = 0; ; index++)
@@ -98,8 +105,48 @@ public class ConsoleServer implements Factory<Command> {
 		create_sshd();
 	}
 
+	class BadCommand extends Exception
+	{
+		String message;
+		BadCommand( String message )
+		{
+			this.message = message;
+		}
+		@Override
+		public String toString() {
+			return message;
+		}
+	}
+
+	/**
+	 * 
+	 * @param name	terminal port name.
+	 * @return The sshServer for the port.
+	 * @throws BadCommand	if the port does not exist.
+	 */
+	sshServer get_port( String name ) throws BadCommand
+	{
+		sshServer server = sshServers.get(name);
+		if ( server == null )
+		{
+			throw new BadCommand("No such port");
+		}
+		return server;
+	}
+
+	/**
+	 * This is the basis of the command interface. We implement a new class for each possible command.
+	 * 
+	 * @author L.P.Klyne
+	 *
+	 */
 	interface cliCommand{
-		String execute(Scanner scanner);
+		/**
+		 * 
+		 * @param scanner
+		 * @return
+		 */
+		String execute(Scanner scanner) throws BadCommand;
 	}
 
 	static String cs_help = 
@@ -142,8 +189,12 @@ public class ConsoleServer implements Factory<Command> {
 	class do_status implements cliCommand
 	{
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public String execute(Scanner scanner) throws BadCommand {
+			// is it connected
+			portConfig config = get_port(scanner.next()).config();
+			
+			return String.format("Name : %s\n Baud : %i\n %i Bits\n %i stopbits\n",
+						config.getName(), config.getBaud(), config.getDatasize(), config.getStopbits() );
 		}
 	}
 	class do_show implements cliCommand
@@ -313,10 +364,17 @@ public class ConsoleServer implements Factory<Command> {
 				commandBuffer.delete(0, eol+2);
 				String command = scanner.next();
 				logger.info("Command -> " + command);
-				if ( cliCommands.containsKey(command)) {
-					out.write(cliCommands.get(command).execute(scanner).getBytes("UTF8"));
+				if ( cliCommands.containsKey(command)) 
+				{
+					try {
+						out.write(cliCommands.get(command).execute(scanner).getBytes("UTF8"));
+					} catch (BadCommand e) {
+						err.write(("Bad command : "+e).getBytes("UTF8"));
+						e.printStackTrace();
+					}
 				}
-				else {
+				else 
+				{
 					err.write(("Unrecognised command"+command).getBytes("UTF8"));
 				}
 			}

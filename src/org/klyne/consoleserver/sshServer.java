@@ -30,6 +30,9 @@ public class sshServer implements Factory<Command> {
 	// or may be the master server that has a command interface on it.
 	private SshServer sshd = null;
 	private portConfig config = null;
+	public portConfig config() {
+		return this.config;
+	}
 	
 	
 	private class sessionHandler implements Command, ChannelDataReceiver, ChannelSessionAware, Message
