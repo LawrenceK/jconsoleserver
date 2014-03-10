@@ -139,5 +139,6 @@ public class sshServer implements Factory<Command> {
 		
 		this.sshd.setShellFactory( this );
 		this.sshd.start();
+		logger.info("Started %s port %s", config.name, config.getPort() );
 	}
 }

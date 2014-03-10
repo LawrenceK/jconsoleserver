@@ -43,8 +43,8 @@ public class testPortConfig {
 		portConfig config = new portConfig("name", 8000, 9600, StopBits.BITS_2, DataBits.DATABITS_8);
 		config.setBaud(19200);
 		config.setPort(8001);
-		config.setDatasize(DataBits.DATABITS_7);
-		config.setStopbits(StopBits.BITS_1);
+		config.setDatasize(7);
+		config.setStopbits("1");
 		assertEquals("name", config.getName());
 		assertEquals(8001, config.getPort());
 		assertEquals(19200, config.getBaud());

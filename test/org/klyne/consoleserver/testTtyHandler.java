@@ -2,7 +2,6 @@ package org.klyne.consoleserver;
 import static org.junit.Assert.*;
 
 import java.nio.charset.CharacterCodingException;
-import java.sql.Time;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,7 @@ public class testTtyHandler {
 	@Before
 	public void setUp() throws Exception {
 		this.messages = new messageHandler();
-		this.handler = new ttyHandler( new portConfig("/dev/ttyUSB1", 8000), this.messages);
+		this.handler = new ttyHandler( new portConfig("/dev/ttyUSB1"), this.messages);
 	}
 
 	@After

@@ -9,6 +9,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Scanner;
 
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
@@ -51,12 +55,16 @@ public class ConsoleServer implements Factory<Command> {
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+		} catch (ConfigurationException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 	}
 
     Logger logger = LoggerFactory.getLogger(ConsoleServer.class);
 	private int sshport = 8000;
 	private SshServer sshd = null;
+	private HashMap<String,portConfig> portConfigs = new HashMap<String,portConfig>();
 	private HashMap<String,sshServer> sshServers = new HashMap<String,sshServer>();
 	
 	public ConsoleServer()
@@ -85,22 +93,72 @@ public class ConsoleServer implements Factory<Command> {
 		this.sshd.start();
 	}
 
-	public void start() throws IOException
+	private void loadConfig() throws ConfigurationException
+	{
+		portConfig config;
+		HierarchicalINIConfiguration ini = new HierarchicalINIConfiguration("./consoleserver.ini");
+		ini.load();
+		for ( String sectionName: ini.getSections() )
+		{
+			SubnodeConfiguration section = ini.getSection(sectionName);
+			if (section.containsKey("baudrate"))
+			{
+				config = new portConfig(sectionName);
+				config.setEnabled( section.getBoolean("enabled", true));
+				config.setPort( section.getInt("sshport", 0));
+				config.setBaud( section.getInt("baudrate", 9600));
+				config.setParity(section.getString("parity", "N"));
+				config.setDatasize(section.getInt("bytesize", 8));
+				config.setStopbits(section.getString("stopbits", "2"));
+				config.setTimeout(section.getInt("timeout", 0));
+				config.setFlowXONXOFF( section.getBoolean("xonxoff", false));
+				config.setFlowRTS( section.getBoolean("rtscts", false));
+				portConfigs.put(config.getName(), config);
+			}
+		}
+/*		
+		for ( int index = 0; index < 32 ; index++)
+		{
+			config = new portConfig("/dev/ttyUSB" + index, this.sshport + 1 + index);
+			portConfigs.put(config.getName(), config);
+		}
+*/
+	}
+
+	private void saveConfig() throws ConfigurationException
+	{
+		HierarchicalINIConfiguration ini = new HierarchicalINIConfiguration("./consoleserver.ini");
+		ini.load();
+		for (portConfig config : portConfigs.values()) 
+		{
+			SubnodeConfiguration section = ini.getSection(config.getName());
+			section.setProperty("sshport", config.getPort());
+			section.setProperty("enable", config.isEnabled());
+			section.setProperty("baudrate", config.getBaud());
+			section.setProperty("parity", config.getParityStr());
+			section.setProperty("bytesize", config.getDatasizeInt());
+			section.setProperty("stopbits", config.getStopbitsStr());
+			section.setProperty("timeout", config.getTimeout());
+			section.setProperty("xonxoff", config.getFlowXONXOFF());
+			section.setProperty("rtscts", config.getFlowRTS());
+		}
+		ini.save();
+	}
+
+	public void start() throws IOException, ConfigurationException
 	/**
 	 * Look for all USB connected terminal ports and create an SSH listener for the port.
 	 * Start the master SSH listener. 
 	 */
 	{
-		portConfig config;
-		for ( int index = 0; ; index++)
+		loadConfig();
+		for (portConfig config : portConfigs.values()) 
 		{
-			config = new portConfig("/dev/ttyUSB" + index, this.sshport + 1 + index);
 			File f = new File(config.getName()); 
-			if ( !f.exists() )
+			if ( f.exists() )
 			{
-				break;
+				sshServers.put(config.getName(), new sshServer(config) );
 			}
-			sshServers.put(config.getName(), new sshServer(config) );
 		}
 		create_sshd();
 	}
@@ -118,20 +176,29 @@ public class ConsoleServer implements Factory<Command> {
 		}
 	}
 
+	class UnimplementedCommand extends BadCommand
+	{
+		String message;
+		UnimplementedCommand( String message )
+		{
+			super(message);
+		}
+	}
+
 	/**
 	 * 
 	 * @param name	terminal port name.
 	 * @return The sshServer for the port.
 	 * @throws BadCommand	if the port does not exist.
 	 */
-	sshServer get_port( String name ) throws BadCommand
+	portConfig get_port_config( String name ) throws BadCommand
 	{
-		sshServer server = sshServers.get(name);
-		if ( server == null )
+		portConfig config = portConfigs.get(name);
+		if ( config == null )
 		{
 			throw new BadCommand("No such port");
 		}
-		return server;
+		return config;
 	}
 
 	/**
@@ -140,152 +207,209 @@ public class ConsoleServer implements Factory<Command> {
 	 * @author L.P.Klyne
 	 *
 	 */
-	interface cliCommand{
+	abstract class cliCommand {
+		String help; 
 		/**
 		 * 
 		 * @param scanner
 		 * @return
 		 */
-		String execute(Scanner scanner) throws BadCommand;
+		abstract List<String> execute(Scanner scanner) throws BadCommand;
 	}
 
-	static String cs_help = 
-	           "help\n" +
-	           "list [list configuration entries]\n" +
-	           "status [list open ports]\n" +
-	           "exit\n" +
-	           "create <portname>\n" +
-	           "show <portname>\n" +
-	           "stop <portname>\n" +
-	           "start <portname>\n" +
-	           "enable <portname> <0,1>\n" +
-	           "baud <portname> <baud>\n" +
-	           "bytesize <portname> <5,6,7,8>\n" +
-	           "stopbits <portname> <1,2>\n" +
-	           "parity <portname> <N,E,O,M,S>\n" +
-	           "rtscts <portname> <0,1>\n" +
-	           "xonxoff <portname> <0,1>\n" +
-	           "sshport <portname> <nnnn>\n";
-
-	class do_help implements cliCommand
+	class do_help extends cliCommand
 	{
+		String help = "help";
 		@Override
-		public String execute(Scanner scanner) {
-			return cs_help;
-		}
-	}
-	class do_list implements cliCommand
-	{
-		@Override
-		public String execute(Scanner scanner) {
-			StringBuffer result = new StringBuffer(500);
-			for (String key : sshServers.keySet()) {
-			    result.append(key);
-			    result.append("\n");
+		public List<String> execute(Scanner scanner) {
+			ArrayList<String> result = new ArrayList<String>();
+			for (cliCommand cmd: cliCommands.values())
+			{
+				result.add(cmd.help);
 			}
-			return result.toString();
+			return result;
 		}
 	}
-	class do_status implements cliCommand
+	class do_list extends cliCommand
 	{
+		String help = "list [list configuration entries]";
 		@Override
-		public String execute(Scanner scanner) throws BadCommand {
-			// is it connected
-			portConfig config = get_port(scanner.next()).config();
+		public List<String> execute(Scanner scanner) {
+			ArrayList<String> result = new ArrayList<String>();
+			for (String key : portConfigs.keySet()) {
+			    result.add(key);
+			}
+			return result;
+		}
+	}
+	class do_status extends cliCommand
+	{
+		String help = "status [list open ports]";
+		@Override
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			ArrayList<String> result = new ArrayList<String>();
+			for (String key : sshServers.keySet()) {
+			    result.add(key);
+			}
+			return result;
+		}
+	}
+	class do_show extends cliCommand
+	{
+		String help = "show <portname>";
+		@Override
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			portConfig config = get_port_config(scanner.next());
+			return config.toStrings();
+		}
+	}
+	class do_exit extends cliCommand
+	{
+		String help = "exit";
+		@Override
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			ArrayList<String> result = new ArrayList<String>();
+			throw new UnimplementedCommand(this.help);
+		}
+	}
+	class do_commit extends cliCommand
+	{
+		String help = "commit";
+		@Override
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			ArrayList<String> result = new ArrayList<String>();
 			
-			return String.format("Name : %s\n Baud : %i\n %i Bits\n %i stopbits\n",
-						config.getName(), config.getBaud(), config.getDatasize(), config.getStopbits() );
+			try {
+				saveConfig();
+				result.add("Ok - Saved");
+			} catch (ConfigurationException e) {
+				e.printStackTrace();
+				result.add("Failed - Cannot write configuration file.");
+			}
+			return result;
 		}
 	}
-	class do_show implements cliCommand
+	class do_create extends cliCommand
 	{
+		String help = "create <portname>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			ArrayList<String> result = new ArrayList<String>();
+			String newName = scanner.next();
+			portConfig config = portConfigs.get(newName);
+			if ( config == null )
+			{
+				config = new portConfig(newName);
+				portConfigs.put(config.getName(), config);
+				result.addAll( cliCommands.get("list").execute(scanner));
+			}
+			else
+			{
+				result.add( "Port allready exists" );
+			}
+			return result;
 		}
 	}
-	class do_exit implements cliCommand
+	class do_stop extends cliCommand
 	{
+		String help = "stop <portname>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			ArrayList<String> result = new ArrayList<String>();
+			String name = scanner.next();
+			// if name in sshServers then we can close it down.
+			throw new UnimplementedCommand(this.help);
 		}
 	}
-	class do_create implements cliCommand
+	class do_start extends cliCommand
 	{
+		String help = "start <portname>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			ArrayList<String> result = new ArrayList<String>();
+			String name = scanner.next();
+			// if name not in sshServers and in portonfigs we can start it.
+			throw new UnimplementedCommand(this.help);
 		}
 	}
-	class do_stop implements cliCommand
+	class do_enable extends cliCommand
 	{
+		String help = "enable <portname> <yes,no>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			portConfig config = get_port_config(scanner.next());
+			config.setEnabled(scanner.nextBoolean());
+			return config.toStrings();
 		}
 	}
-	class do_start implements cliCommand
+	class do_baud extends cliCommand
 	{
+		String help = "baud <portname> <baud>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			portConfig config = get_port_config(scanner.next());
+			config.setBaud(scanner.nextInt());;
+			return config.toStrings();
 		}
 	}
-	class do_enable implements cliCommand
+	class do_bytesize extends cliCommand
 	{
+		String help = "bytesize <portname> <5,6,7,8>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			portConfig config = get_port_config(scanner.next());
+			config.setDatasize(scanner.nextInt());;
+			return config.toStrings();
 		}
 	}
-	class do_baud implements cliCommand
+	class do_stopbits extends cliCommand
 	{
+		String help = "stopbits <portname> <1,2>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			portConfig config = get_port_config(scanner.next());
+			config.setStopbits(scanner.next());
+			return config.toStrings();
 		}
 	}
-	class do_bytesize implements cliCommand
+	class do_parity extends cliCommand
 	{
+		String help = "parity <portname> <N,E,O,M,S>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			portConfig config = get_port_config(scanner.next());
+			config.setParity(scanner.next());
+			return config.toStrings();
 		}
 	}
-	class do_stopbits implements cliCommand
+	class do_rtscts extends cliCommand
 	{
+		String help = "rtscts <portname> <yes,no>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			portConfig config = get_port_config(scanner.next());
+			config.setFlowRTS(scanner.nextBoolean());
+			return config.toStrings();
 		}
 	}
-	class do_parity implements cliCommand
+	class do_xonxoff extends cliCommand
 	{
+		String help = "xonxoff <portname> <yes,no>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			portConfig config = get_port_config(scanner.next());
+			config.setFlowXONXOFF(scanner.nextBoolean());
+			return config.toStrings();
 		}
 	}
-	class do_rtscts implements cliCommand
+	class do_sshport extends cliCommand
 	{
+		String help = "sshport <portname> <nnnn>";
 		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
-		}
-	}
-	class do_xonxoff implements cliCommand
-	{
-		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
-		}
-	}
-	class do_sshport implements cliCommand
-	{
-		@Override
-		public String execute(Scanner scanner) {
-			return "Not Implemented";
+		public List<String> execute(Scanner scanner) throws BadCommand {
+			portConfig config = get_port_config(scanner.next());
+			config.setPort(scanner.nextInt());;
+			return config.toStrings();
 		}
 	}
 
@@ -307,10 +431,12 @@ public class ConsoleServer implements Factory<Command> {
 	cliCommands.put("rtscts", new do_rtscts());
 	cliCommands.put("xonxoff", new do_xonxoff());
 	cliCommands.put("sshport", new do_sshport());
+	cliCommands.put("commit", new do_commit());
 	}
 
 	private class sessionHandler implements Command, ChannelDataReceiver, ChannelSessionAware
 	{
+		ChannelSession session;
 	    Logger logger = LoggerFactory.getLogger(sessionHandler.class);
 	    StringBuffer commandBuffer = new StringBuffer(256);
 		OutputStream out;
@@ -353,10 +479,11 @@ public class ConsoleServer implements Factory<Command> {
 		@Override
 		public int data(ChannelSession channel, byte[] buf, int start, int len)
 				throws IOException {
+			out.write(buf, start, len);	// echo
 			commandBuffer.append(new String(buf, start, len, "UTF-8"));
 			logger.info("ssh -> buffer " + commandBuffer);
 			// Does it have and end of line?
-			int eol = commandBuffer.indexOf("\r\n");
+			int eol = commandBuffer.indexOf("\r");
 			if (eol >= 0)
 			{
 				// parse and process
@@ -367,7 +494,9 @@ public class ConsoleServer implements Factory<Command> {
 				if ( cliCommands.containsKey(command)) 
 				{
 					try {
-						out.write(cliCommands.get(command).execute(scanner).getBytes("UTF8"));
+						String response = StringUtils.join(cliCommands.get(command).execute(scanner), "\r\n");
+						logger.info("Response -> " + response);
+						out.write(response.getBytes("UTF8"));
 					} catch (BadCommand e) {
 						err.write(("Bad command : "+e).getBytes("UTF8"));
 						e.printStackTrace();
@@ -378,6 +507,8 @@ public class ConsoleServer implements Factory<Command> {
 					err.write(("Unrecognised command"+command).getBytes("UTF8"));
 				}
 			}
+			out.flush();
+			err.flush();
 			return len;
 		}
 
@@ -390,7 +521,8 @@ public class ConsoleServer implements Factory<Command> {
 		public void setChannelSession(ChannelSession session) {
 			// register for callback on data received.
 			logger.info("setChannelSession");
-			session.setDataReceiver(this);
+			this.session = session;
+			this.session.setDataReceiver(this);
 		}
 	}
 	
