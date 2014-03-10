@@ -17,6 +17,8 @@ public class portConfig {
 	StopBits stopbits = StopBits.BITS_2;
 	int port = 8000;
 	Parity parity = Parity.NONE;
+	boolean doRTS = false;
+	boolean doXON = false;
 	FlowControl flowControl = FlowControl.NONE;
 	int timeout = 0;
 
@@ -158,15 +160,17 @@ public class portConfig {
 	public FlowControl getFlowControl() {
 		return this.flowControl;
 	}
-	public String getFlowRTS() {
-		return "0";
+	public boolean getFlowRTS() {
+		return this.doRTS;
 	}
-	public String getFlowXONXOFF() {
-		return "0";
+	public boolean getFlowXONXOFF() {
+		return this.doXON;
 	}
 	public void setFlowRTS(boolean RTS) {
+		this.doRTS = RTS;
 	}
 	public void setFlowXONXOFF(boolean doXON) {
+		this.doXON = doXON;
 	}
 	public int getTimeout() {
 		return timeout;
@@ -199,7 +203,7 @@ public class portConfig {
 		result.add( "Name : " + this.name);
 		result.add( "Device : " + getFileName() );
 		result.add( "Enabled : " + isEnabled() );
-		result.add( String.format("Settings : %i:%i:%s:%i",this.baud, getDatasizeInt(), getParityStr(), getStopbitsStr()));  
+		result.add( String.format("Settings : %s:%s:%s:%s",this.baud, getDatasizeInt(), getParityStr(), getStopbitsStr()));  
 		result.add( String.format("FlowControl %s:%s",getFlowRTS(), getFlowXONXOFF())); 
 		result.add( "SSHPort : " + getPort() );
 		result.add( "Timeout : " + getTimeout() );

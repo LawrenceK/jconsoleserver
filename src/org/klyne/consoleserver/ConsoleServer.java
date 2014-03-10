@@ -133,7 +133,7 @@ public class ConsoleServer implements Factory<Command> {
 		{
 			SubnodeConfiguration section = ini.getSection(config.getName());
 			section.setProperty("sshport", config.getPort());
-			section.setProperty("enable", config.isEnabled());
+			section.setProperty("enabled", config.isEnabled());
 			section.setProperty("baudrate", config.getBaud());
 			section.setProperty("parity", config.getParityStr());
 			section.setProperty("bytesize", config.getDatasizeInt());
@@ -219,7 +219,9 @@ public class ConsoleServer implements Factory<Command> {
 
 	class do_help extends cliCommand
 	{
-		String help = "help";
+		{
+			this.help = "help";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) {
 			ArrayList<String> result = new ArrayList<String>();
@@ -232,7 +234,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_list extends cliCommand
 	{
-		String help = "list [list configuration entries]";
+		{
+			this.help = "list [list configuration entries]";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) {
 			ArrayList<String> result = new ArrayList<String>();
@@ -244,7 +248,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_status extends cliCommand
 	{
-		String help = "status [list open ports]";
+		{
+			this.help = "status [list open ports]";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			ArrayList<String> result = new ArrayList<String>();
@@ -256,7 +262,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_show extends cliCommand
 	{
-		String help = "show <portname>";
+		{
+			this.help = "show <portname>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			portConfig config = get_port_config(scanner.next());
@@ -265,7 +273,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_exit extends cliCommand
 	{
-		String help = "exit";
+		{
+			this.help = "exit";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			ArrayList<String> result = new ArrayList<String>();
@@ -274,7 +284,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_commit extends cliCommand
 	{
-		String help = "commit";
+		{
+			this.help = "commit";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			ArrayList<String> result = new ArrayList<String>();
@@ -291,7 +303,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_create extends cliCommand
 	{
-		String help = "create <portname>";
+		{
+			this.help = "create <portname>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			ArrayList<String> result = new ArrayList<String>();
@@ -312,7 +326,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_stop extends cliCommand
 	{
-		String help = "stop <portname>";
+		{
+			this.help = "stop <portname>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			ArrayList<String> result = new ArrayList<String>();
@@ -323,7 +339,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_start extends cliCommand
 	{
-		String help = "start <portname>";
+		{
+			this.help = "start <portname>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			ArrayList<String> result = new ArrayList<String>();
@@ -334,7 +352,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_enable extends cliCommand
 	{
-		String help = "enable <portname> <yes,no>";
+		{
+			this.help = "enable <portname> <yes,no>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			portConfig config = get_port_config(scanner.next());
@@ -344,7 +364,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_baud extends cliCommand
 	{
-		String help = "baud <portname> <baud>";
+		{
+			this.help = "baud <portname> <baud>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			portConfig config = get_port_config(scanner.next());
@@ -354,7 +376,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_bytesize extends cliCommand
 	{
-		String help = "bytesize <portname> <5,6,7,8>";
+		{
+			this.help = "bytesize <portname> <5,6,7,8>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			portConfig config = get_port_config(scanner.next());
@@ -364,7 +388,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_stopbits extends cliCommand
 	{
-		String help = "stopbits <portname> <1,2>";
+		{
+			this.help = "stopbits <portname> <1,2>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			portConfig config = get_port_config(scanner.next());
@@ -374,7 +400,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_parity extends cliCommand
 	{
-		String help = "parity <portname> <N,E,O,M,S>";
+		{
+			this.help = "parity <portname> <N,E,O,M,S>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			portConfig config = get_port_config(scanner.next());
@@ -384,7 +412,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_rtscts extends cliCommand
 	{
-		String help = "rtscts <portname> <yes,no>";
+		{
+			this.help = "rtscts <portname> <yes,no>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			portConfig config = get_port_config(scanner.next());
@@ -394,7 +424,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_xonxoff extends cliCommand
 	{
-		String help = "xonxoff <portname> <yes,no>";
+		{
+			this.help = "xonxoff <portname> <yes,no>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			portConfig config = get_port_config(scanner.next());
@@ -404,7 +436,9 @@ public class ConsoleServer implements Factory<Command> {
 	}
 	class do_sshport extends cliCommand
 	{
-		String help = "sshport <portname> <nnnn>";
+		{
+			this.help = "sshport <portname> <nnnn>";
+		}
 		@Override
 		public List<String> execute(Scanner scanner) throws BadCommand {
 			portConfig config = get_port_config(scanner.next());
@@ -489,26 +523,35 @@ public class ConsoleServer implements Factory<Command> {
 				// parse and process
 				Scanner scanner = new Scanner(commandBuffer.substring(0,eol));
 				commandBuffer.delete(0, eol+2);
-				String command = scanner.next();
-				logger.info("Command -> " + command);
-				if ( cliCommands.containsKey(command)) 
+				if (eol > 0)
 				{
-					try {
-						String response = StringUtils.join(cliCommands.get(command).execute(scanner), "\r\n");
-						logger.info("Response -> " + response);
-						out.write(response.getBytes("UTF8"));
-					} catch (BadCommand e) {
+					String command = scanner.next();
+					logger.info("Command -> " + command);
+					if ( cliCommands.containsKey(command)) 
+					{
+						try {
+							String response = StringUtils.join(cliCommands.get(command).execute(scanner), "\r\n");
+							logger.info("Response -> " + response);
+							out.write(response.getBytes("UTF8"));
+						} 
+						catch (UnimplementedCommand e) {
+							err.write(("Unimplemented command : "+e).getBytes("UTF8"));
+							e.printStackTrace();
+						}
+						catch (BadCommand e) {
 						err.write(("Bad command : "+e).getBytes("UTF8"));
 						e.printStackTrace();
+						}
+					}
+					else 
+					{
+						err.write(("Unrecognised command"+command).getBytes("UTF8"));
 					}
 				}
-				else 
-				{
-					err.write(("Unrecognised command"+command).getBytes("UTF8"));
-				}
+				err.flush();
+				out.write( "\r\nOk> ".getBytes("UTF8") );
 			}
 			out.flush();
-			err.flush();
 			return len;
 		}
 
